@@ -1,0 +1,12 @@
+{
+  "name": "The Design of Pablo Bridge",
+  "id": "1",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "Needs web socket access to localhost server to receive live design system events."
+  }
+}

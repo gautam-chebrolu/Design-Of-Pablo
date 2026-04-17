@@ -30,6 +30,9 @@ figma.ui.onmessage = async (msg) => {
       
       await updateSelectedShapes(ds.colors);
       
+      // Create a summary slide if we're in Figma Slides
+      await createDesignSystemSlide(ds);
+      
       figma.notify('✨ The Design of Pablo System Applied!');
     } catch (e) {
       console.error(e);
@@ -249,6 +252,270 @@ async function updateSelectedShapes(colors) {
   for (const rootNode of nodes) {
     await traverseAndRecolor(rootNode);
   }
+}
+
+/**
+ * Creates a Design System summary slide (only in Figma Slides).
+ * Layout: Left 1/3 has theme info + typography. Right 2/3 has color swatches.
+ */
+async function createDesignSystemSlide(ds) {
+  // Only run if we're in Figma Slides (createSlide API exists)
+  if (typeof figma.createSlide !== 'function') {
+    console.log("Not in Figma Slides — skipping summary slide.");
+    return;
+  }
+
+  var colors = ds.colors || {};
+  var colorNames = ds.colorNames || {};
+  var typography = ds.typography || {};
+  var fonts = typography.suggestedFonts || {};
+
+  // --- Load fonts ---
+  var safeFont = { family: 'Inter', style: 'Regular' };
+  var safeFontBold = { family: 'Inter', style: 'Bold' };
+  var safeFontLight = { family: 'Inter', style: 'Light' };
+  try { await figma.loadFontAsync(safeFont); } catch (e) { console.warn('Could not load Inter Regular'); }
+  try { await figma.loadFontAsync(safeFontBold); } catch (e) { console.warn('Could not load Inter Bold'); }
+  try { await figma.loadFontAsync(safeFontLight); } catch (e) { console.warn('Could not load Inter Light'); }
+
+  // Try loading the AI-suggested heading font
+  var headingFont = safeFontBold;
+  if (fonts.heading) {
+    var hWeights = ['Bold', 'Semi Bold', 'SemiBold', '700', '600', 'Medium', 'Regular'];
+    for (var wi = 0; wi < hWeights.length; wi++) {
+      try {
+        var candidate = { family: fonts.heading, style: hWeights[wi] };
+        await figma.loadFontAsync(candidate);
+        headingFont = candidate;
+        break;
+      } catch (e) {}
+    }
+  }
+
+  // Try loading the AI-suggested body font
+  var bodyFont = safeFont;
+  if (fonts.body) {
+    var bWeights = ['Regular', 'Normal', '400', 'Light', 'Medium'];
+    for (var wi2 = 0; wi2 < bWeights.length; wi2++) {
+      try {
+        var candidate2 = { family: fonts.body, style: bWeights[wi2] };
+        await figma.loadFontAsync(candidate2);
+        bodyFont = candidate2;
+        break;
+      } catch (e) {}
+    }
+  }
+
+  // --- Create the slide ---
+  var slide = figma.createSlide();
+  var bgRgb = hexToRgb(colors.background);
+  if (bgRgb) {
+    slide.fills = [{ type: 'SOLID', color: bgRgb }];
+  }
+
+  var textColor = hexToRgb(colors.text) || { r: 0.17, g: 0.17, b: 0.17 };
+  var textSecColor = hexToRgb(colors.textSecondary) || { r: 0.45, g: 0.45, b: 0.45 };
+  var primaryColor = hexToRgb(colors.primary) || textColor;
+
+  // ============================================
+  // LEFT PANEL — Theme Info (x: 80, width: 500)
+  // ============================================
+  var LX = 80;
+  var LW = 500;
+  var yPos = 100;
+
+  // Style name (big heading)
+  var styleNode = figma.createText();
+  slide.appendChild(styleNode);
+  styleNode.fontName = headingFont;
+  styleNode.characters = (ds.style || 'Design System').toUpperCase();
+  styleNode.fontSize = 44;
+  styleNode.fills = [{ type: 'SOLID', color: primaryColor }];
+  styleNode.x = LX;
+  styleNode.y = yPos;
+  styleNode.textAutoResize = 'HEIGHT';
+  styleNode.resize(LW, styleNode.height);
+  yPos += styleNode.height + 28;
+
+  // Mood
+  if (ds.mood) {
+    var moodNode = figma.createText();
+    slide.appendChild(moodNode);
+    moodNode.fontName = bodyFont;
+    moodNode.characters = ds.mood;
+    moodNode.fontSize = 20;
+    moodNode.fills = [{ type: 'SOLID', color: textSecColor }];
+    moodNode.x = LX;
+    moodNode.y = yPos;
+    moodNode.textAutoResize = 'HEIGHT';
+    moodNode.resize(LW, moodNode.height);
+    yPos += moodNode.height + 16;
+  }
+
+  // Atmosphere
+  if (ds.atmosphere) {
+    var atmoNode = figma.createText();
+    slide.appendChild(atmoNode);
+    atmoNode.fontName = bodyFont;
+    atmoNode.characters = ds.atmosphere;
+    atmoNode.fontSize = 16;
+    atmoNode.fills = [{ type: 'SOLID', color: textSecColor }];
+    atmoNode.x = LX;
+    atmoNode.y = yPos;
+    atmoNode.textAutoResize = 'HEIGHT';
+    atmoNode.resize(LW, atmoNode.height);
+    yPos += atmoNode.height + 40;
+  }
+
+  // Separator line
+  var sepLine = figma.createRectangle();
+  slide.appendChild(sepLine);
+  sepLine.x = LX;
+  sepLine.y = yPos;
+  sepLine.resize(LW, 1);
+  sepLine.fills = [{ type: 'SOLID', color: textSecColor }];
+  sepLine.opacity = 0.25;
+  yPos += 40;
+
+  // Typography label
+  var typoLabel = figma.createText();
+  slide.appendChild(typoLabel);
+  typoLabel.fontName = safeFontBold;
+  typoLabel.characters = 'TYPOGRAPHY';
+  typoLabel.fontSize = 11;
+  typoLabel.letterSpacing = { value: 20, unit: 'PERCENT' };
+  typoLabel.fills = [{ type: 'SOLID', color: textSecColor }];
+  typoLabel.x = LX;
+  typoLabel.y = yPos;
+  yPos += 32;
+
+  // Heading font sample
+  var headingSample = figma.createText();
+  slide.appendChild(headingSample);
+  headingSample.fontName = headingFont;
+  headingSample.characters = fonts.heading || 'Heading Font';
+  headingSample.fontSize = 32;
+  headingSample.fills = [{ type: 'SOLID', color: textColor }];
+  headingSample.x = LX;
+  headingSample.y = yPos;
+  yPos += 48;
+
+  // Body font sample
+  var bodySample = figma.createText();
+  slide.appendChild(bodySample);
+  bodySample.fontName = bodyFont;
+  bodySample.characters = fonts.body || 'Body Font';
+  bodySample.fontSize = 22;
+  bodySample.fills = [{ type: 'SOLID', color: textSecColor }];
+  bodySample.x = LX;
+  bodySample.y = yPos;
+  yPos += 48;
+
+  // Design notes
+  if (ds.designNotes) {
+    yPos += 16;
+    var notesNode = figma.createText();
+    slide.appendChild(notesNode);
+    notesNode.fontName = bodyFont;
+    notesNode.characters = ds.designNotes;
+    notesNode.fontSize = 14;
+    notesNode.fills = [{ type: 'SOLID', color: textSecColor }];
+    notesNode.x = LX;
+    notesNode.y = yPos;
+    notesNode.textAutoResize = 'HEIGHT';
+    notesNode.resize(LW, notesNode.height);
+  }
+
+  // =============================================
+  // RIGHT PANEL — Color Swatches (x: 700)
+  // =============================================
+  var RX = 700;
+  var availableWidth = 1920 - RX - 80; // 1140px
+  var swatchGap = 20;
+  var swatchW = Math.floor((availableWidth - 3 * swatchGap) / 4); // ~270px
+  var swatchRectH = 220;
+  var swatchTextH = 70;
+  var rowGap = 40;
+
+  var colorEntries = [
+    { key: 'primary', label: 'Primary' },
+    { key: 'secondary', label: 'Secondary' },
+    { key: 'accent', label: 'Accent' },
+    { key: 'background', label: 'Background' },
+    { key: 'surface', label: 'Surface' },
+    { key: 'text', label: 'Text' },
+    { key: 'textSecondary', label: 'Text Secondary' }
+  ];
+
+  var topRowY = 100;
+  var bottomRowY = topRowY + swatchRectH + swatchTextH + rowGap;
+
+  for (var i = 0; i < colorEntries.length; i++) {
+    var entry = colorEntries[i];
+    var hex = colors[entry.key];
+    if (!hex) continue;
+
+    var rgb = hexToRgb(hex);
+    if (!rgb) continue;
+
+    var col, rowY;
+    if (i < 4) {
+      col = i;
+      rowY = topRowY;
+    } else {
+      col = i - 4;
+      rowY = bottomRowY;
+    }
+
+    var sx = RX + col * (swatchW + swatchGap);
+
+    // Color rectangle
+    var rect = figma.createRectangle();
+    slide.appendChild(rect);
+    rect.x = sx;
+    rect.y = rowY;
+    rect.resize(swatchW, swatchRectH);
+    rect.fills = [{ type: 'SOLID', color: rgb }];
+    rect.cornerRadius = 8;
+
+    // Color label
+    var labelNode = figma.createText();
+    slide.appendChild(labelNode);
+    labelNode.fontName = safeFont;
+    labelNode.characters = entry.label;
+    labelNode.fontSize = 16;
+    labelNode.fills = [{ type: 'SOLID', color: textColor }];
+    labelNode.x = sx;
+    labelNode.y = rowY + swatchRectH + 12;
+
+    // Hex value
+    var hexNode = figma.createText();
+    slide.appendChild(hexNode);
+    hexNode.fontName = safeFontLight;
+    hexNode.characters = hex.toUpperCase();
+    hexNode.fontSize = 14;
+    hexNode.fills = [{ type: 'SOLID', color: textSecColor }];
+    hexNode.x = sx;
+    hexNode.y = rowY + swatchRectH + 34;
+
+    // Evocative name
+    var evoName = colorNames[entry.key];
+    if (evoName) {
+      var evoNode = figma.createText();
+      slide.appendChild(evoNode);
+      evoNode.fontName = safeFontLight;
+      evoNode.characters = evoName;
+      evoNode.fontSize = 12;
+      evoNode.fills = [{ type: 'SOLID', color: textSecColor }];
+      evoNode.x = sx;
+      evoNode.y = rowY + swatchRectH + 54;
+    }
+  }
+
+  // Focus on the new slide
+  figma.currentPage.selection = [slide];
+  figma.viewport.scrollAndZoomIntoView([slide]);
+  figma.notify('📊 Design System summary slide created!');
 }
 
 // Utility: convert "#RRGGBB" to figma compatible {r, g, b} normalized object

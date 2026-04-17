@@ -190,14 +190,14 @@ body {
 }
 
 .step.active .step-dot {
-  background: var(--gradient-primary);
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border-color: transparent;
-  box-shadow: 0 0 20px rgba(168, 130, 255, 0.4);
 }
 
 .step.completed .step-dot {
-  background: rgba(168, 130, 255, 0.2);
-  border-color: var(--accent-1);
+  background: rgba(43, 43, 43, 0.15);
+  border-color: var(--text-primary);
 }
 
 .step-label {
@@ -295,8 +295,8 @@ body {
   align-items: center;
   gap: var(--space-sm);
   padding: 14px 32px;
-  background: var(--gradient-primary);
-  color: white;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border: none;
   border-radius: var(--radius-full);
   font-family: var(--font-display);
@@ -304,12 +304,11 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--duration-normal) var(--ease-out);
-  box-shadow: 0 4px 24px rgba(168, 130, 255, 0.3);
 }
 
 .capture-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(168, 130, 255, 0.45);
+  opacity: 0.85;
 }
 
 .capture-btn:active {
@@ -393,8 +392,8 @@ body {
   gap: var(--space-sm);
   width: 100%;
   padding: 16px 32px;
-  background: var(--gradient-primary);
-  color: white;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border: none;
   border-radius: var(--radius-full);
   font-family: var(--font-display);
@@ -402,12 +401,11 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--duration-normal) var(--ease-out);
-  box-shadow: 0 4px 24px rgba(168, 130, 255, 0.3);
 }
 
 .primary-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(168, 130, 255, 0.45);
+  opacity: 0.85;
 }
 
 .primary-btn:active {
@@ -415,7 +413,7 @@ body {
 }
 
 .primary-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: not-allowed;
   transform: none;
 }
@@ -602,7 +600,8 @@ body {
 .style-badge {
   display: inline-block;
   padding: 4px 14px;
-  background: var(--gradient-primary);
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border-radius: var(--radius-full);
   font-family: var(--font-display);
   font-size: 0.75rem;
@@ -796,7 +795,7 @@ body {
 .figma-url-input input {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -815,7 +814,7 @@ body {
 }
 
 .prompt-box {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--bg-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-md);
@@ -856,8 +855,8 @@ body {
   bottom: 32px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--accent-1);
-  color: white;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   padding: 12px 24px;
   border-radius: var(--radius-full);
   font-family: var(--font-display);

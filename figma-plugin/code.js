@@ -112,13 +112,25 @@ async function updateTextStyles(fonts) {
     } else if (name.includes('header')) {
       familyToLoad = fonts.heading;
       preferredStyles = ['Medium', '500', 'Regular', 'Normal', 'Semi Bold'];
-    } else if (name.includes('subheadline 1') || name.includes('subheadline 2')) {
+    } else if (name.includes('subheadline 1') || name.includes('subheadline 2') || name.includes('subheadline')) {
       familyToLoad = fonts.heading || fonts.body;
       preferredStyles = ['Regular', 'Normal', '400', 'Medium', 'Light'];
-    } else if (name.includes('body')) {
+    } else if (name.includes('body 1')) {
+      familyToLoad = fonts.body;
+      preferredStyles = ['Regular', 'Normal', '400', 'Light', 'Medium'];
+    } else if (name.includes('body 2')) {
       familyToLoad = fonts.body;
       preferredStyles = ['Light', '300', 'Regular', 'Normal'];
-    } else if (name.includes('caption 1') || name.includes('caption 2')) {
+    } else if (name.includes('body 3')) {
+      familyToLoad = fonts.body;
+      preferredStyles = ['Light', '300', 'Extra Light', 'ExtraLight', '200', 'Regular'];
+    } else if (name.includes('body')) {
+      familyToLoad = fonts.body;
+      preferredStyles = ['Regular', 'Normal', '400', 'Light'];
+    } else if (name.includes('note')) {
+      familyToLoad = fonts.body;
+      preferredStyles = ['Light', '300', 'Regular', 'Normal', 'Extra Light'];
+    } else if (name.includes('caption 1') || name.includes('caption 2') || name.includes('caption')) {
       familyToLoad = fonts.body;
       preferredStyles = ['Light', '300', 'Regular', 'Normal'];
     } else {

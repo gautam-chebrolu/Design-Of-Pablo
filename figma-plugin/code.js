@@ -23,6 +23,9 @@ figma.ui.onmessage = async (msg) => {
     try {
       await updateOrAddColors(ds.colors, ds.colorNames);
       
+      // Create/update Local Color Styles in the library
+      var colorStyleMap = await createOrUpdateColorStyles(ds.colors, ds.colorNames);
+      
       const suggestedFonts = ds.typography ? ds.typography.suggestedFonts : undefined;
       if (suggestedFonts) {
         await updateTextStyles(suggestedFonts);
@@ -31,7 +34,7 @@ figma.ui.onmessage = async (msg) => {
       await updateSelectedShapes(ds.colors);
       
       // Create a summary slide if we're in Figma Slides
-      await createDesignSystemSlide(ds);
+      await createDesignSystemSlide(ds, colorStyleMap);
       
       figma.notify('✨ The Design of Pablo System Applied!');
     } catch (e) {
@@ -255,10 +258,67 @@ async function updateSelectedShapes(colors) {
 }
 
 /**
+ * Creates or updates Local Paint Styles (Color Styles) so they appear in
+ * the Figma style library and can be reused across the file.
+ * Returns a map of color key -> style ID.
+ */
+async function createOrUpdateColorStyles(colors, colorNames) {
+  var names = colorNames || {};
+  var colorEntries = [
+    { key: 'primary', label: 'Primary' },
+    { key: 'secondary', label: 'Secondary' },
+    { key: 'accent', label: 'Accent' },
+    { key: 'background', label: 'Background' },
+    { key: 'surface', label: 'Surface' },
+    { key: 'text', label: 'Text' },
+    { key: 'textSecondary', label: 'Text Secondary' }
+  ];
+
+  var localPaintStyles = figma.getLocalPaintStyles();
+  var styleMap = {};
+
+  for (var i = 0; i < colorEntries.length; i++) {
+    var entry = colorEntries[i];
+    var hex = colors[entry.key];
+    if (!hex) continue;
+
+    var rgb = hexToRgb(hex);
+    if (!rgb) continue;
+
+    var styleName = 'Pablo / ' + entry.label;
+
+    // Find existing style or create a new one
+    var style = null;
+    for (var s = 0; s < localPaintStyles.length; s++) {
+      if (localPaintStyles[s].name === styleName) {
+        style = localPaintStyles[s];
+        break;
+      }
+    }
+
+    if (!style) {
+      style = figma.createPaintStyle();
+      style.name = styleName;
+    }
+
+    style.paints = [{ type: 'SOLID', color: rgb }];
+
+    if (names[entry.key]) {
+      style.description = names[entry.key];
+    }
+
+    styleMap[entry.key] = style.id;
+    console.log('Updated Color Style "' + styleName + '" to ' + hex);
+  }
+
+  return styleMap;
+}
+
+/**
  * Creates a Design System summary slide (only in Figma Slides).
  * Layout: Left 1/3 has theme info + typography. Right 2/3 has color swatches.
  */
-async function createDesignSystemSlide(ds) {
+async function createDesignSystemSlide(ds, colorStyleMap) {
   // Only run if we're in Figma Slides (createSlide API exists)
   if (typeof figma.createSlide !== 'function') {
     console.log("Not in Figma Slides — skipping summary slide.");
@@ -475,8 +535,15 @@ async function createDesignSystemSlide(ds) {
     rect.x = sx;
     rect.y = rowY;
     rect.resize(swatchW, swatchRectH);
-    rect.fills = [{ type: 'SOLID', color: rgb }];
     rect.cornerRadius = 8;
+
+    // Bind to the Color Style if available, otherwise use raw fill
+    var boundStyleId = colorStyleMap ? colorStyleMap[entry.key] : null;
+    if (boundStyleId) {
+      rect.fillStyleId = boundStyleId;
+    } else {
+      rect.fills = [{ type: 'SOLID', color: rgb }];
+    }
 
     // Color label
     var labelNode = figma.createText();
